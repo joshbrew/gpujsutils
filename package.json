@@ -1,0 +1,28 @@
+{
+  "name": "gpujsutils",
+  "version": "1.0.0",
+  "description": "Wrapper for gpujs (with a stable slightly edited gpu.js source file) with a bunch of premade functions for use or demonstration. The main show here is bulk GPU FFTs which run REALLY fast.",
+  "main": "src/gpuUtils.js",
+  "directories": {
+    "example": "example"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/brainsatplay/gpujsutils.git"
+  },
+  "keywords": [
+    "gpu",
+    "gpujs",
+    "utilities",
+    "magic"
+  ],
+  "author": "Joshua Brewster, Dovydas Stirpeika, gpujs team",
+  "license": "AGPL-3.0-or-later",
+  "bugs": {
+    "url": "https://github.com/brainsatplay/gpujsutils/issues"
+  },
+  "homepage": "https://github.com/brainsatplay/gpujsutils#readme"
+}
