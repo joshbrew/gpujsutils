@@ -1,4 +1,4 @@
-//By Joshua Brewster, Dovydas Stirpeika (MIT License)
+//By Joshua Brewster, Dovydas Stirpeika (AGPL v3.0 License)
 //------------------------------------
 //---------GPU Utility Funcs---------- (gpu.addFunction())
 //------------------------------------
