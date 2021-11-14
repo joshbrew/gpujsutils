@@ -10,9 +10,11 @@ export function makeKrnl(gpu, f, opts = {
   setImmutable: true,
   setGraphical: false
 }) {
+
   const k = gpu.createKernel(f);
 
   if (opts.setDynamicOutput)    k.setDynamicOutput(true);
+  if (opts.output)              k.setOutput(opts.output);
   if (opts.setDynamicArguments) k.setDynamicArguments(true);
   if (opts.setPipeline)         k.setPipeline(true);
   if (opts.setImmutable)        k.setImmutable(true);
@@ -24,10 +26,11 @@ export function makeKrnl(gpu, f, opts = {
   return k;
 }
 
-export function makeCanvasKrnl(appendToId, gpu, f, opts = {
-  setDynamicOutput: true,
+export function makeCanvasKrnl(toAppend, gpu, f, opts = {
+  output: [300,300],
   setDynamicArguments: true,
-  setPipeline: true,
+  setDynamicOutput: true,
+  setPipeline: false,
   setImmutable: true,
   setGraphical: true
 }) {
@@ -38,7 +41,8 @@ export function makeCanvasKrnl(appendToId, gpu, f, opts = {
 
   const canvas = k.canvas; 
 
-  document.getElementById(appendToId).appendChild(canvas);
+  if (typeof toAppend === 'string') document.getElementById(toAppend).appendChild(canvas);
+  else toAppend.appendChild(canvas);
 
   return k; //run k() with the input arguments in an animation loop, get graphical output.
 }
@@ -48,6 +52,7 @@ export class gpuUtils {
   constructor(gpu = new GPU()) {
     this.gpu = gpu;
     this.kernels = []; // {name:"",f:foo(){}}
+    this.canvaskernels = [];
 
     this.kernel;
     this.PI = 3.141592653589793;
@@ -130,15 +135,16 @@ export class gpuUtils {
     
   }
 
-  addCanvasKernel(name, f, appendToId) {
-    let found = this.kernels.find((o)=> {
+  addCanvasKernel(name, f, toAppend, opts) {
+    let found = this.canvaskernels.find((o)=> {
       if(o.name === name) {
         return true;
       }
     });
     if(!found) {
-      this.kernels.push({name:name,krnl:makeCanvasKrnl(appendToId,this.gpu,f)});
-      return true;
+      let krnl = makeCanvasKrnl(toAppend,this.gpu,f, opts)
+      this.kernels.push({name,krnl});
+      return krnl;
     } else { 
       console.error('Kernel already exists'); 
       return false;
@@ -182,8 +188,25 @@ export class gpuUtils {
 
   callKernel(name="",args=[]) {
     let result;
-    let found = this.customFunctions.find((o)=> {
+    let found = this.kernels.find((o)=> {
       if(o.name === name) {
+        //console.log(o.krnl,args)
+        result = o.krnl(...args);
+        return true;
+      }
+    });
+    if(!found) {
+      console.error('Kernel not found');
+      return false;
+    } else return result;
+  }
+
+  callCanvasKernel(name="",args=[],outputDims=[]) {
+    let result;
+    let found = this.kernels.find((o)=> {
+      if(o.name === name) {
+        //console.log(o.krnl,args)
+        if (outputDims.length === 2) o.krnl.setOutput(outputDims);
         result = o.krnl(...args);
         return true;
       }
@@ -195,7 +218,7 @@ export class gpuUtils {
   }
 
   hasKernel(name="") {
-    let found = this.customFunctions.find((o)=> {
+    let found = this.kernels.find((o)=> {
       if(o.name === name) {
         return true;
       }
@@ -226,7 +249,6 @@ export class gpuUtils {
     this.listidft1D_windowed = makeKrnl(this.gpu, krnl.listidft1D_windowedKern);
     this.listifft1D_windowed = makeKrnl(this.gpu, krnl.listifft1D_windowedKern);
     this.bulkArrayMul = makeKrnl(this.gpu, krnl.bulkArrayMulKern);
-    this.multiConv2D = makeKrnl(this.gpu, krnl.multiImgConv2DKern);
 
     this.kernels.push(
       {name:"correlograms", krnl:this.correlograms},
@@ -245,8 +267,7 @@ export class gpuUtils {
       {name:"listfft1D_windowed", krnl:this.listfft1D_windowed},
       {name:"listidft1D_windowed", krnl:this.listidft1D_windowed},
       {name:"listifft1D_windowed", krnl:this.listifft1D_windowed},
-      {name:"bulkArrayMul", krnl:this.bulkArrayMul},
-      {name:"multiConv2D", krnl:this.multiConv2D}
+      {name:"bulkArrayMul", krnl:this.bulkArrayMul}
       );
     
     //----------------------------------- Easy gpu pipelining
