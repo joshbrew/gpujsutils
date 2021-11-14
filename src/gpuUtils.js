@@ -48,7 +48,6 @@ export class gpuUtils {
   constructor(gpu = new GPU()) {
     this.gpu = gpu;
     this.kernels = []; // {name:"",f:foo(){}}
-    this.canvaskernels = [];
 
     this.kernel;
     this.PI = 3.141592653589793;
@@ -132,7 +131,7 @@ export class gpuUtils {
   }
 
   addCanvasKernel(name, f, appendToId) {
-    let found = this.canvaskernels.find((o)=> {
+    let found = this.kernels.find((o)=> {
       if(o.name === name) {
         return true;
       }
