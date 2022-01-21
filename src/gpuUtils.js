@@ -372,7 +372,7 @@ export class gpuUtils {
     this.dft.setOutput([signalBuffer.length]);
     this.dft.setLoopMaxIterations(nSamples);
 
-    var outputTex = this.dft(signalBuffer, nSamples, scalar, DCoffset);
+    var outputTex = this.dft(signalBuffer, nSamples, scalar);
     var output = null;
     if(texOut === false){
       var freqDist = this.makeFrequencyDistribution(nSamples, sampleRate);
@@ -468,7 +468,7 @@ export class gpuUtils {
     this.fft.setOutput([signalBuffer.length]);
     this.fft.setLoopMaxIterations(nSamples);
 
-    var outputTex = this.fft(signalBuffer, nSamples, scalar, DCoffset);
+    var outputTex = this.fft(signalBuffer, nSamples, scalar);
     var output = null;
     if(texOut === false){
       var freqDist = this.makeFrequencyDistribution(nSamples, sampleRate);
