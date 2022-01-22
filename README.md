@@ -5,16 +5,202 @@ gpu.js is amazing and this makes life easier to use it and add baked but flexibl
 ```
 npm i gpujsutils
 ```
+#### Create a GPU util instance, + general utility functions
+```js
+import {gpuUtils, makeKrnl, makeCanvasKrnl} from 'gpuUtils'
+
+const gpuutils = new gpuUtils();
+```
+
+#### Create a GPU kernel with default settings
+```js
+
+function transpose2DKern(mat2) { //Transpose a 2D matrix, meant to be combined
+    return mat2[gpuutils.thread.y][gpuutils.thread.x];
+}
+
+let kernel = makeKrnl(
+    gpuutils.gpu, //the actual GPUjs instance, used normally  
+    transpose2DKern, //the kernel
+{ //kernel settings, meant to use all of the flexibility features by default (e.g. dynamic sizing)
+  setDynamicOutput: true,
+  setDynamicArguments: true,
+  setPipeline: true,
+  setImmutable: true,
+  setGraphical: false
+}); //makeKrnl(gpuutils.gpu);
+
+let mat2 = [[1,2,3,4],[5,6,7,8],[8,9,10,11],[12,13,14,15]];
+
+let result = kernel(mat2)
+
+//OR to add to the gpu utilities
+
+kernel = gpuutils.addKernel('transpose2D', transpose2DKern);
+result = gpuutils.callKernel('transpose2D',mat2);
 
 
 ```
-import {gpuUtils} from 'gpuUtils'
 
-let gpu = new gpuUtils();
+#### Create a kernel that renders to a canvas
+```js
 
-//annnnnd look at the code and read gpujs's docs for the rest (for now), lots of goodies
+//From a gpujs observable: https://observablehq.com/@robertleeplummerjr/video-convolution-using-gpu-js
+function ImgConv2DKern(img, width, height, kernel, kernelLength) {
+    let kernelRadius = (Math.sqrt(kernelLength) - 1) / 2;
+    const kSize = 2 * kernelRadius + 1;
+    let r = 0, g = 0, b = 0;
+
+    let i = -kernelRadius;
+    let kernelOffset = 0;
+    while (i <= kernelRadius) {
+        if (gpuutils.thread.x + i < 0 || gpuutils.thread.x + i >= width) {
+            i++;
+            continue;
+        }
+
+        let j = -kernelRadius;
+        while (j <= kernelRadius) {
+            if (gpuutils.thread.y + j < 0 || gpuutils.thread.y + j >= height) {
+                j++;
+                continue;
+            }
+
+            kernelOffset = (j + kernelRadius) * kSize + i + kernelRadius;
+            const weights = kernel[kernelOffset];
+            const pixel = img[gpuutils.thread.y + i][gpuutils.thread.x + j];
+            r += pixel.r * weights;
+            g += pixel.g * weights;
+            b += pixel.b * weights;
+            j++;
+        }
+        i++;
+    }
+
+    gpuutils.color(r, g, b);
+}
+
+
+let kernel = makeCanvasKernel( 
+    gpu,
+    ImgConv2DKern,
+    {
+        output: [300,300],
+        setDynamicArguments: true,
+        setDynamicOutput: true,
+        setPipeline: false,
+        setImmutable: true,
+        setGraphical: true
+    },
+    divId //id of the div to append a new canvas to. Leave blank to append to body
+);
+
+kernel(video); //input an image or video from a source
+
+//OR to add to the gpu utilities
+
+kernel = gpuutils.addCanvasKernel('imgConv', ImgConv2DKern);
+gpuutils.callCanvasKernel('imgConv',video, [video.width,video.height]);
+
+
 
 ```
+
+
+### Combine Kernels
+```js
+
+//adapted from gpujs tutorial
+const add = gpuutils.addKernel('add',function(a, b) {
+  return a[gpuutils.thread.x] + b[gpuutils.thread.x];
+}).setOutput([20]);
+
+const multiply = gpuutils.addKernel('multiply',function(a, b) {
+  return a[gpuutils.thread.x] * b[gpuutils.thread.x];
+}).setOutput([20]);
+
+//multi-step operations
+const superKernel = gpuutils.combineKernels(
+    'superKernel', //name the combined kernel
+    ['add','multiply'], 
+    function(a, b, c) {
+        return multiply(add(a, b), c);
+    }
+);
+
+let result = gpuutils.callKernel('superKernel',[3,4,5]);
+
+```
+
+### Default Macros
+```js
+
+//pass signal buffer to receive an ordered amplitude spectrum based 0.5x the size of sample rate (nyquist frequency)
+gpuutils.gpuDFT(
+    signalBuffer, //the signal buffer
+    nSeconds, //number of seconds of data. sample rate = length/nSeconds 
+    scalar, //can apply a scalar multiplier to the amplitudes
+    texOut //receive a texture map out instead of arrays?
+);
+
+//or
+gpuutils.gpuFFT(...); //faster
+
+
+// pass a 1D array of evenly-sized signal buffers to receive a list of ordered amplitude spectrums 0.5x the size of sample rate (nyquist frequency)
+gpuutils.MultiChannelDFT(
+    signalBuffer,  //1D list of evenly sized signal buffers
+    nSeconds, //number of seconds of data. sample rate = length/nSeconds 
+    scalar, //can apply a scalar multiplier to the amplitudes
+    false //receive a texture map out instead of arrays?
+);
+
+//or 
+gpuutils.MultiChannelFFT(...); //faster
+
+// pass a 1D array of evenly-sized signal buffers to receive a list of ordered amplitude spectrums 0.5x the size of sample rate (nyquist frequency), between the two frequencies. Better with more seconds or higher samplerate
+gpuutils.MultiChannelDFT_Bandpass(
+    signalBuffer,  //1D list of evenly sized signal buffers
+    nSeconds, //number of seconds of data. sample rate = length/nSeconds 
+    freqStart, //start frequency e.g. 3Hz
+    freqEnd, //end Frequency e.g. 100Hz
+     scalar, //can apply a scalar multiplier to the amplitudes
+    false //receive a texture map out instead of arrays?
+);
+
+//or 
+gpuutils.MultiChannelFFT_BandPass(...);
+
+```
+
+
+### Default Kernels
+```js
+
+    gpuutils.dft //discrete fourier transform
+    gpuutils.idft //inverse DFT (untested :P)
+    gpuutils.dft_windowed //DFT between two frequencies, need sufficient sample rate or number of seconds of data
+    gpuutils.idft_windowed //inverse dft to reverse the bandpassed dft (untested)
+    gpuutils.fft //fast fourier transform, simply decimates the number of samples used to compute lower frequency amplitudes
+    gpuutils.ifft //inverse fft (untested)
+    gpuutils.fft_windowed //bandpassed fft
+    gpuutils.ifft_windowed  //inverse bandpassed fft (untested)
+    gpuutils.listdft2D  //pass an array of arrays in of the same length to return a list of DFTs (broken) 
+    gpuutils.listdft1D   //pass a single array of evenly sized sample sets of data to return the DFTs. 
+    gpuutils.listdft1D_windowed  //etc
+    gpuutils.listfft1D             //etc
+    gpuutils.listfft1D_windowed     //tc
+    gpuutils.listidft1D_windowed  //untested
+    gpuutils.listifft1D_windowed  //untested
+    gpuutils.bulkArrayMul 
+    gpuutils.correlograms; //cross correlations, untested
+    gpuutils.correlogramsPC; //precomputed means and estimators
+
+```
+
+There's a few other things used internally but they're not that useful.
+
+
 
 
 Joshua Brewster & Dovydas Stirpeika

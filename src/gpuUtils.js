@@ -26,14 +26,14 @@ export function makeKrnl(gpu, f, opts = {
   return k;
 }
 
-export function makeCanvasKrnl(toAppend, gpu, f, opts = {
+export function makeCanvasKrnl(gpu, f, opts = {
   output: [300,300],
   setDynamicArguments: true,
   setDynamicOutput: true,
   setPipeline: false,
   setImmutable: true,
   setGraphical: true
-}) {
+}, divId) {
 
   const k = makeKrnl(gpu,f,opts);
 
@@ -41,8 +41,9 @@ export function makeCanvasKrnl(toAppend, gpu, f, opts = {
 
   const canvas = k.canvas; 
 
-  if (typeof toAppend === 'string') document.getElementById(toAppend).appendChild(canvas);
-  else toAppend.appendChild(canvas);
+  if (typeof divId === 'string') document.getElementById(toAppend).appendChild(canvas);
+  else if(divId) toAppend.appendChild(canvas);
+  else document.body.appendChild(canvas);
 
   return k; //run k() with the input arguments in an animation loop, get graphical output.
 }
@@ -51,7 +52,7 @@ export class gpuUtils {
   
   constructor(gpu = new GPU()) {
     this.gpu = gpu;
-    this.kernels = []; // {name:"",f:foo(){}}
+    this.kernels = new Map(); // {name:"",f:foo(){}}
 
     this.kernel;
     this.PI = 3.141592653589793;
@@ -118,14 +119,10 @@ export class gpuUtils {
   }
 
   //add kernels to run based on input data. Input/Output sizes are dynamically allocated, functions are saved on the gpu to improve runtimes
-  addKernel(name="", krnl=function foo(){}) {
-    let found = this.kernels.find((o)=> {
-      if(o.name === name) {
-        return true;
-      }
-    });
+  addKernel(name="", krnl=function foo(){}, opts) {
+    let found = this.kernels.get(name);
     if(!found) {
-      this.kernels.push({name:name, krnl:makeKrnl(this.gpu,krnl)});
+      this.kernels.set(name, makeKrnl(this.gpu,krnl,opts));
       return true;
     } else { 
       console.error('Kernel already exists'); 
@@ -134,15 +131,11 @@ export class gpuUtils {
     
   }
 
-  addCanvasKernel(name, f, toAppend, opts) {
-    let found = this.kernels.find((o)=> {
-      if(o.name === name) {
-        return true;
-      }
-    });
+  addCanvasKernel(name, f,  opts, divId) {
+    let found = this.kernels.get(name);
     if(!found) {
-      let krnl = makeCanvasKrnl(toAppend,this.gpu,f, opts)
-      this.kernels.push({name,krnl});
+      let krnl = makeCanvasKrnl(this.gpu,f,opts,divId);
+      this.kernels.set(name,krnl);
       return krnl;
     } else { 
       console.error('Kernel already exists'); 
@@ -152,33 +145,26 @@ export class gpuUtils {
   }
 
   //combine two or more kernels into a single function, this lets you run multiple kernels on the GPU (with appropriately varying inputs/output sizes) before returning to the CPU.
-  //Discount compute shaders
+  //Discount compute shaders? Not sure if this even works
   combineKernels(name, fs=[], ckrnl=function foo() {}) {
-    let found = this.kernels.find((o)=> {
-      if(o.name === name) {
-        return true;
-      }
-    });
+    let found = this.kernels.get(name);
     if(!found) {
       fs.forEach((f,i)=>{
         if(typeof f === 'string') {
-          let found2 = this.krnl.find((o)=> {
-            if(o.name === name) {
-              return true;
-            }
-          });
-          if(found2) fs[i] = found2.kernel;
+          let found2 = this.kernels.get(f);
+          if(found2) fs[i] = found2;
           else return false;
         } else if (typeof f === 'function') {
-          if(this[f.name]) {
-            //cool
+          if(this.kernels.get(f.name)) {
+            //all good
           } else {
             this.addKernel(f.name, f);
           }
         }
       });
-      this.kernels.push({name:name, krnl:this.gpu.combineKernels(...fs,ckrnl)});
-      return true;
+      let krnl = this.gpu.combineKernels(...fs,ckrnl);
+      this.kernels.set(name, krnl);
+      return krnl;
     } else { 
       console.error('Kernel already exists'); 
       return false;
@@ -187,41 +173,30 @@ export class gpuUtils {
 
   callKernel(name="",args=[]) {
     let result;
-    let found = this.kernels.find((o)=> {
-      if(o.name === name) {
-        //console.log(o.krnl,args)
-        result = o.krnl(...args);
-        return true;
-      }
-    });
-    if(!found) {
+    let krnl = this.kernels.get(name);
+    if(!krnl) {
       console.error('Kernel not found');
       return false;
-    } else return result;
+    } 
+    result = krnl(...args);
+    return result;
   }
 
   callCanvasKernel(name="",args=[],outputDims=[]) {
     let result;
-    let found = this.kernels.find((o)=> {
-      if(o.name === name) {
-        //console.log(o.krnl,args)
-        if (outputDims.length === 2) o.krnl.setOutput(outputDims);
-        result = o.krnl(...args);
-        return true;
-      }
-    });
-    if(!found) {
+    let krnl = this.kernels.get(name);
+    if(!krnl) {
       console.error('Kernel not found');
       return false;
-    } else return result;
+    } else {
+      if (outputDims.length === 2) krnl.setOutput(outputDims);
+      result = krnl(...args);
+      return result;
+    }
   }
 
   hasKernel(name="") {
-    let found = this.kernels.find((o)=> {
-      if(o.name === name) {
-        return true;
-      }
-    });
+    let found = this.kernels.get(name);
     if(!found) {
       return false;
     } else return true;
@@ -231,7 +206,7 @@ export class gpuUtils {
     addGpuFunctions.forEach(f => this.gpu.addFunction(f));
 
     this.correlograms = makeKrnl(this.gpu, krnl.correlogramsKern);
-    this.correlogramsPC = makeKrnl(this.gpu, krnl.correlogramsKern);
+    this.correlogramsPC = makeKrnl(this.gpu, krnl.correlogramsPCKern);
     this.dft = makeKrnl(this.gpu, krnl.dftKern);
     this.idft = makeKrnl(this.gpu, krnl.idftKern);
     this.dft_windowed = makeKrnl(this.gpu, krnl.dft_windowedKern);
@@ -249,7 +224,7 @@ export class gpuUtils {
     this.listifft1D_windowed = makeKrnl(this.gpu, krnl.listifft1D_windowedKern);
     this.bulkArrayMul = makeKrnl(this.gpu, krnl.bulkArrayMulKern);
 
-    this.kernels.push(
+    let kernels = [
       {name:"correlograms", krnl:this.correlograms},
       {name:"correlogramsPC", krnl: this.correlogramsPC},
       {name:"dft", krnl:this.dft},
@@ -267,8 +242,12 @@ export class gpuUtils {
       {name:"listidft1D_windowed", krnl:this.listidft1D_windowed},
       {name:"listifft1D_windowed", krnl:this.listifft1D_windowed},
       {name:"bulkArrayMul", krnl:this.bulkArrayMul}
-      );
+    ];
     
+    kernels.forEach((k) => {
+      this.kernels.set(k.name,k);
+    })
+
     //----------------------------------- Easy gpu pipelining
     //------------Combine Kernels-------- gpu.combineKernels(f1,f2,function(a,b,c) { f1(f2(a,b),c); });
     //----------------------------------- TODO: Make this actually work (weird error)
