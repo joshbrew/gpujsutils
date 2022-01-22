@@ -12,6 +12,23 @@ import {gpuUtils, makeKrnl, makeCanvasKrnl} from 'gpuUtils'
 const gpuutils = new gpuUtils();
 ```
 
+#### Add a GPU utilty function which can be called in kernels (see gpujs docs for more)
+```js
+
+function rms(arr, mean, len) { //root mean square error
+    var est = 0;
+    var vari = 0;
+    for (var i = 0; i < len; i++) {
+        vari = arr[i]-mean;
+        est += vari*vari;
+    }
+    return Math.sqrt(est/len);
+}
+
+gpuutils.addFunction(rms);
+
+```
+
 #### Create a GPU kernel with default settings
 ```js
 
