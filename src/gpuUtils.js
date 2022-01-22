@@ -460,7 +460,7 @@ export class gpuUtils {
 
   
   //Input array buffer and the number of seconds of data
-  gpuFFT(signalBuffer, nSeconds, scalar=1, texOut = false){
+  gpuFFT(signalBuffer, nSeconds, scalar=1, sampleRate, texOut = false){
 
     var nSamples = signalBuffer.length;
     var sampleRate = nSamples/nSeconds;
@@ -468,7 +468,7 @@ export class gpuUtils {
     this.fft.setOutput([signalBuffer.length]);
     this.fft.setLoopMaxIterations(nSamples);
 
-    var outputTex = this.fft(signalBuffer, nSamples, scalar);
+    var outputTex = this.fft(signalBuffer, nSamples, scalar, sampleRate);
     var output = null;
     if(texOut === false){
       var freqDist = this.makeFrequencyDistribution(nSamples, sampleRate);
@@ -500,7 +500,7 @@ export class gpuUtils {
     this.listfft1D.setOutput([signalBufferProcessed.length]); //Set output to length of list of signals
     this.listfft1D.setLoopMaxIterations(nSamplesPerChannel); //Set loop size to the length of one signal (assuming all are uniform length)
         
-    var outputTex = this.listfft1D(signalBufferProcessed,nSamplesPerChannel, scalar);
+    var outputTex = this.listfft1D(signalBufferProcessed,nSamplesPerChannel, scalar, sampleRate);
     if(texOut === false){
       var orderedMagsList = [];
 
