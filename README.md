@@ -130,11 +130,11 @@ gpuutils.callCanvasKernel('imgConv',video, [video.width,video.height]);
 //adapted from gpujs tutorial
 const add = gpuutils.addKernel('add',function(a, b) {
   return a[gpuutils.thread.x] + b[gpuutils.thread.x];
-}).setOutput([20]);
+});
 
 const multiply = gpuutils.addKernel('multiply',function(a, b) {
   return a[gpuutils.thread.x] * b[gpuutils.thread.x];
-}).setOutput([20]);
+});
 
 //multi-step operations
 const superKernel = gpuutils.combineKernels(
