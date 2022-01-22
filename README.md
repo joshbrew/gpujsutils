@@ -94,7 +94,7 @@ function ImgConv2DKern(img, width, height, kernel, kernelLength) {
         i++;
     }
 
-    gpuutils.color(r, g, b);
+    this.color(r, g, b);
 }
 
 
