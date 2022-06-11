@@ -579,7 +579,7 @@ export const createGpuKernels = {
     correlogramsKern, correlogramsPCKern, dftKern, idftKern, fftKern, ifftKern,
     dft_windowedKern, idft_windowedKern, fft_windowedKern, ifft_windowedKern, 
     listdft2DKern, listdft1DKern, listfft1DKern, listfft1D_windowedKern, listdft1D_windowedKern, listidft1D_windowedKern, listifft1D_windowedKern,
-    bulkArrayMulKern, fftKern, ifftKern, multiImgConv2DKern,
+    bulkArrayMulKern, multiImgConv2DKern,
     ImgConv2DKern, transpose2DKern
 }
 

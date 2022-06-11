@@ -1,10 +1,5 @@
 ## gpujsutils
 
-![status](https://img.shields.io/npm/v/gpujsutils.svg) 
-![downloads](https://img.shields.io/npm/dt/gpujsutils.svg)
-![size](https://img.shields.io/github/size/brainsatplay/gpujsutils/src/gpuUtils.js)
-![l](https://img.shields.io/npm/l/gpujsutils)
-
 gpu.js is amazing and this makes life easier to use it and add baked but flexible functionality. This revolve around persistent kernels with resizable i/o on-the-fly so we can make the best use of the performance benefits of parallelization. This is even better with web workers (see our MagicWorker library)
 
 ```
@@ -99,7 +94,7 @@ function ImgConv2DKern(img, width, height, kernel, kernelLength) {
         i++;
     }
 
-    this.color(r, g, b);
+    gpuutils.color(r, g, b);
 }
 
 
@@ -135,11 +130,11 @@ gpuutils.callCanvasKernel('imgConv',video, [video.width,video.height]);
 //adapted from gpujs tutorial
 const add = gpuutils.addKernel('add',function(a, b) {
   return a[gpuutils.thread.x] + b[gpuutils.thread.x];
-});
+}).setOutput([20]);
 
 const multiply = gpuutils.addKernel('multiply',function(a, b) {
   return a[gpuutils.thread.x] * b[gpuutils.thread.x];
-});
+}).setOutput([20]);
 
 //multi-step operations
 const superKernel = gpuutils.combineKernels(
