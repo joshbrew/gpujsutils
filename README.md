@@ -1,5 +1,9 @@
 ## gpujsutils
 
+![tinybuild-status](https://img.shields.io/npm/v/gpujsutils.svg) 
+![tinybuild-downloads](https://img.shields.io/npm/dt/gpujsutils.svg)
+![tinybuild-l](https://img.shields.io/npm/l/gpujsutils)
+
 gpu.js is amazing and this makes life easier to use it and add baked but flexible functionality. This revolve around persistent kernels with resizable i/o on-the-fly so we can make the best use of the performance benefits of parallelization. This is even better with web workers (see our MagicWorker library)
 
 ```
