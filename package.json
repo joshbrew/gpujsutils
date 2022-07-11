@@ -1,6 +1,6 @@
 {
   "name": "gpujsutils",
-  "version": "1.0.9",
+  "version": "1.0.10",
   "description": "Wrapper for gpujs (with a stable slightly edited gpu.js source file) with a bunch of premade functions for use or demonstration. The main show here is bulk GPU FFTs which run REALLY fast.",
   "main": "dist/index.js",
   "module": "dist/index.esm.js",

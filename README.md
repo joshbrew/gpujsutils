@@ -39,7 +39,7 @@ gpuutils.addFunction(rms);
 ```js
 
 function transpose2DKern(mat2) { //Transpose a 2D matrix, meant to be combined
-    return mat2[gpuutils.thread.y][gpuutils.thread.x];
+    return mat2[this.thread.y][this.thread.x];
 }
 
 let kernel = makeKrnl(
@@ -100,7 +100,7 @@ function ImgConv2DKern(img, width, height, kernel, kernelLength) {
         i++;
     }
 
-    gpuutils.color(r, g, b);
+    this.color(r, g, b);
 }
 
 
