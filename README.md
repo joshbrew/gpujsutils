@@ -1,10 +1,12 @@
 ## gpujsutils
 
-![tinybuild-status](https://img.shields.io/npm/v/gpujsutils.svg) 
-![tinybuild-downloads](https://img.shields.io/npm/dt/gpujsutils.svg)
-![tinybuild-l](https://img.shields.io/npm/l/gpujsutils)
+![gpujsutils-status](https://img.shields.io/npm/v/gpujsutils.svg) 
+![gpujsutils-downloads](https://img.shields.io/npm/dt/gpujsutils.svg)
+![gpujsutils-l](https://img.shields.io/npm/l/gpujsutils)
 
-gpu.js is amazing and this makes life easier to use it and add baked but flexible functionality. This revolve around persistent kernels with resizable i/o on-the-fly so we can make the best use of the performance benefits of parallelization. This is even better with web workers (see our MagicWorker library)
+[gpu.js](https://github.com/gpujs) is an amazing library for writing gpu kernels in plain js. This wrapper makes life easier to use it with a stable gpu.js bundle and adds some flexible macros. This revolve around persistent kernels with resizable i/o on-the-fly so we can make the best use of the performance benefits of parallelization. This is even better with web workers (see our MagicWorker library)
+
+See GPU.js docs for information on how to write kernels
 
 ```
 npm i gpujsutils
@@ -75,21 +77,21 @@ function ImgConv2DKern(img, width, height, kernel, kernelLength) {
     let i = -kernelRadius;
     let kernelOffset = 0;
     while (i <= kernelRadius) {
-        if (gpuutils.thread.x + i < 0 || gpuutils.thread.x + i >= width) {
+        if (this.thread.x + i < 0 || this.thread.x + i >= width) {
             i++;
             continue;
         }
 
         let j = -kernelRadius;
         while (j <= kernelRadius) {
-            if (gpuutils.thread.y + j < 0 || gpuutils.thread.y + j >= height) {
+            if (this.thread.y + j < 0 || this.thread.y + j >= height) {
                 j++;
                 continue;
             }
 
             kernelOffset = (j + kernelRadius) * kSize + i + kernelRadius;
             const weights = kernel[kernelOffset];
-            const pixel = img[gpuutils.thread.y + i][gpuutils.thread.x + j];
+            const pixel = img[this.thread.y + i][this.thread.x + j];
             r += pixel.r * weights;
             g += pixel.g * weights;
             b += pixel.b * weights;
@@ -133,11 +135,11 @@ gpuutils.callCanvasKernel('imgConv',video, [video.width,video.height]);
 
 //adapted from gpujs tutorial
 const add = gpuutils.addKernel('add',function(a, b) {
-  return a[gpuutils.thread.x] + b[gpuutils.thread.x];
+  return a[this.thread.x] + b[this.thread.x];
 }).setOutput([20]);
 
 const multiply = gpuutils.addKernel('multiply',function(a, b) {
-  return a[gpuutils.thread.x] * b[gpuutils.thread.x];
+  return a[this.thread.x] * b[this.thread.x];
 }).setOutput([20]);
 
 //multi-step operations
