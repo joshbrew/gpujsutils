@@ -50,7 +50,7 @@ export function makeCanvasKrnl(gpu, f, opts = {
 
 export class gpuUtils {
   
-  constructor(gpu = new GPU()) {
+  constructor(gpu = new GPUjs()) {
     this.gpu = gpu;
     this.kernels = new Map(); // {name:"",f:foo(){}}
 
